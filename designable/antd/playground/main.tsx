@@ -79,7 +79,7 @@ const App = () => {
           <WorkspacePanel>
             <ToolbarPanel>
               <DesignerToolsWidget />
-              <ViewToolsWidget />
+              {/* <ViewToolsWidget /> */}
             </ToolbarPanel>
             <ViewportPanel>
               <ViewPanel type="DESIGNABLE">

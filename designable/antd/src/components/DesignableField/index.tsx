@@ -25,7 +25,7 @@ Schema.silent()
 export const createDesignableField = (options: IDesignableFieldProps) => {
   const realOptions = createOptions(options)
 
-  const tabs = {}
+  // const tabs = {}
 
   const getFieldPropsSchema = (node: TreeNode): ISchema => {
     const decorator = node.props['x-decorator']
@@ -38,99 +38,153 @@ export const createDesignableField = (options: IDesignableFieldProps) => {
       component &&
       (FormPath.getIn(realOptions.componentsPropsSchema, component) ||
         FormPath.getIn(defaultSchemas, component))
-    const TabSchema = (key: string, schema: ISchema) => {
-      tabs[key] = tabs[key] || FormTab.createFormTab()
-      return {
-        type: 'object',
-        properties: {
-          propsTab: {
-            type: 'void',
-            'x-component': 'FormTab',
-            'x-component-props': {
-              formTab: tabs[key],
-              style: {
-                overflow: 'visible',
-              },
-            },
-            properties: {
-              propsPane: {
-                type: 'void',
-                'x-component': 'FormTab.TabPane',
-                'x-component-props': {
-                  tab: GlobalRegistry.getDesignerMessage(
-                    `settings.${key}.tab_property`
-                  ),
-                },
-                properties: schema.properties,
-              },
-              stylePane: {
-                type: 'void',
-                'x-component': 'FormTab.TabPane',
-                'x-component-props': {
-                  tab: GlobalRegistry.getDesignerMessage(
-                    `settings.${key}.tab_style`
-                  ),
-                },
-                properties: {
-                  style: defaultSchemas.CSSStyle,
-                },
-              },
-            },
-          },
+    // const TabSchema = (key: string, schema: ISchema) => {
+    //   tabs[key] = tabs[key] || FormTab.createFormTab()
+    //   return {
+    //     type: 'object',
+    //     properties: {
+    //       propsTab: {
+    //         type: 'void',
+    //         'x-component': 'FormTab',
+    //         'x-component-props': {
+    //           formTab: tabs[key],
+    //           style: {
+    //             overflow: 'visible',
+    //           },
+    //         },
+    //         properties: {
+    //           propsPane: {
+    //             type: 'void',
+    //             'x-component': 'FormTab.TabPane',
+    //             'x-component-props': {
+    //               tab: GlobalRegistry.getDesignerMessage(
+    //                 `settings.${key}.tab_property`
+    //               ),
+    //             },
+    //             properties: schema.properties,
+    //           },
+    //           stylePane: {
+    //             type: 'void',
+    //             'x-component': 'FormTab.TabPane',
+    //             'x-component-props': {
+    //               tab: GlobalRegistry.getDesignerMessage(
+    //                 `settings.${key}.tab_style`
+    //               ),
+    //             },
+    //             properties: {
+    //               style: defaultSchemas.CSSStyle,
+    //             },
+    //           },
+    //         },
+    //       },
+    //     },
+    //   }
+    // }
+
+    const commonProperties = {
+      name: {
+        type: 'string',
+        'x-decorator': 'FormItem',
+        'x-component': 'Input',
+        'x-index': 0,
+      },
+      title: {
+        type: 'string',
+        'x-decorator': 'FormItem',
+        'x-component': 'Input',
+        'x-index': 1,
+      },
+      description: {
+        type: 'string',
+        'x-decorator': 'FormItem',
+        'x-component': 'Input.TextArea',
+        'x-index': 2,
+      },
+      'x-display': {
+        type: 'string',
+        enum: ['visible', 'hidden', 'none', ''],
+        'x-decorator': 'FormItem',
+        'x-component': 'Select',
+        'x-component-props': {
+          defaultValue: 'visible',
         },
-      }
+        'x-index': 3,
+      },
+      'x-pattern': {
+        type: 'string',
+        enum: ['editable', 'disabled', 'readOnly', 'readPretty', ''],
+        'x-decorator': 'FormItem',
+        'x-component': 'Select',
+        'x-component-props': {
+          defaultValue: 'editable',
+        },
+        'x-index': 4,
+      },
     }
     const base = {
       type: 'object',
       properties: {
-        name: {
-          type: 'string',
-          'x-decorator': 'FormItem',
-          'x-component': 'Input',
-          'x-index': 0,
-        },
-        title: {
-          type: 'string',
-          'x-decorator': 'FormItem',
-          'x-component': 'Input',
-          'x-index': 1,
-        },
-        description: {
-          type: 'string',
-          'x-decorator': 'FormItem',
-          'x-component': 'Input.TextArea',
-          'x-index': 2,
-        },
-        'x-display': {
-          type: 'string',
-          enum: ['visible', 'hidden', 'none', ''],
-          'x-decorator': 'FormItem',
-          'x-component': 'Select',
+        propsTab: {
+          type: 'void',
+          'x-component': 'FormTab',
           'x-component-props': {
-            defaultValue: 'visible',
+            formTab: FormTab.createFormTab(),
+            style: {
+              overflow: 'visible',
+            },
           },
-          'x-index': 3,
-        },
-        'x-pattern': {
-          type: 'string',
-          enum: ['editable', 'disabled', 'readOnly', 'readPretty', ''],
-          'x-decorator': 'FormItem',
-          'x-component': 'Select',
-          'x-component-props': {
-            defaultValue: 'editable',
+          properties: {
+            commonPane: {
+              type: 'void',
+              'x-component': 'FormTab.TabPane',
+              'x-component-props': {
+                tab: GlobalRegistry.getDesignerMessage(
+                  `settings.x-component-props.tab_property`
+                ),
+              },
+              properties: commonProperties,
+            },
+            // 要动态加载所以只能在这里用&&
+            propsPane: componentSchema && {
+              type: 'void',
+              'x-component': 'FormTab.TabPane',
+              'x-component-props': {
+                tab: GlobalRegistry.getDesignerMessage(
+                  `settings.x-component-props.tab_property`
+                ),
+              },
+              properties: {
+                'x-component-props': {
+                  type: 'object',
+                  properties: componentSchema.properties,
+                },
+              },
+            },
+            stylePane: decoratorSchema && {
+              type: 'void',
+              'x-component': 'FormTab.TabPane',
+              'x-component-props': {
+                tab: GlobalRegistry.getDesignerMessage(
+                  `settings.x-decorator-props.tab_style`
+                ),
+              },
+              properties: {
+                'x-decorator-props': {
+                  type: 'object',
+                  properties: {
+                    style: defaultSchemas.CSSStyle,
+                  },
+                },
+              },
+            },
           },
-          'x-index': 4,
         },
-        'x-component-props':
-          componentSchema && TabSchema('x-component-props', componentSchema),
-        'x-decorator-props':
-          decoratorSchema && TabSchema('x-decorator-props', decoratorSchema),
       },
     }
 
     if (node.props.type === 'void') {
       if (!includesComponent(node, realOptions.dropReactionComponents)) {
-        Object.assign(base.properties, {
+        Object.assign(commonProperties, {
           'x-reactions': {
             'x-decorator': 'FormItem',
             'x-index': 5,
@@ -139,7 +193,7 @@ export const createDesignableField = (options: IDesignableFieldProps) => {
         })
       }
       if (!includesComponent(node, realOptions.dropFormItemComponents)) {
-        Object.assign(base.properties, {
+        Object.assign(commonProperties, {
           'x-decorator': {
             type: 'string',
             'x-decorator': 'FormItem',
@@ -156,12 +210,12 @@ export const createDesignableField = (options: IDesignableFieldProps) => {
           },
         })
       } else {
-        delete base.properties.title
-        delete base.properties.description
+        delete commonProperties.title
+        delete commonProperties.description
       }
     } else {
       if (!includesComponent(node, realOptions.dropReactionComponents)) {
-        Object.assign(base.properties, {
+        Object.assign(commonProperties, {
           'x-reactions': {
             'x-decorator': 'FormItem',
             'x-index': 8,
@@ -169,7 +223,7 @@ export const createDesignableField = (options: IDesignableFieldProps) => {
           },
         })
       }
-      Object.assign(base.properties, {
+      Object.assign(commonProperties, {
         default: {
           'x-decorator': 'FormItem',
           'x-component': 'ValueInput',
