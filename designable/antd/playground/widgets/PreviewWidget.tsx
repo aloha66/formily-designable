@@ -32,6 +32,7 @@ import {
 import { Card, Slider, Rate } from 'antd'
 import { TreeNode } from '@designable/core'
 import { transformToSchema } from '@designable/formily'
+import { Table } from '../../src/coms/custom'
 
 const SchemaField = createSchemaField({
   components: {
@@ -63,6 +64,7 @@ const SchemaField = createSchemaField({
     Card,
     Slider,
     Rate,
+    Table,
   },
 })
 

@@ -362,6 +362,7 @@ export const createDesignableField = (options: IDesignableFieldProps) => {
         </VoidField>
       )
     }
+
     return <Field {...fieldProps} name={node.id} />
   })
 

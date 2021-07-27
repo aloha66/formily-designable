@@ -387,6 +387,7 @@ export default {
         Group: '复选框组',
       },
       Card: '卡片布局',
+      Table: '表格',
       FormGrid: '网格布局',
       FormLayout: '表单布局',
       Slider: '滑动条',

@@ -26,7 +26,7 @@ const getWorkspaceAlias = () => {
 
 export default {
   mode: 'development',
-  devtool: 'inline-source-map', // 嵌入到源文件中
+  devtool: 'cheap-module-source-map', // 嵌入到源文件中
   stats: {
     entrypoints: false,
     children: false,

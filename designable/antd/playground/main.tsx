@@ -1,15 +1,15 @@
-import React, { useMemo } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import ReactDOM from 'react-dom'
 import {
   Designer,
   IconWidget,
   DesignerToolsWidget,
-  ViewToolsWidget,
+  // ViewToolsWidget,
   Workspace,
   OutlineTreeWidget,
   DragSourceWidget,
   MainPanel,
-  CompositePanel,
+  // CompositePanel,
   WorkspacePanel,
   ToolbarPanel,
   ViewportPanel,
@@ -18,7 +18,11 @@ import {
   ComponentTreeWidget,
 } from '@designable/react'
 import { SettingsForm } from '@designable/react-settings-form'
-import { createDesigner, GlobalRegistry } from '@designable/core'
+import {
+  createDesigner,
+  GlobalRegistry,
+  GlobalDragSource,
+} from '@designable/core'
 import { createDesignableField, createDesignableForm } from '../src'
 import {
   LogoWidget,
@@ -27,6 +31,7 @@ import {
   SchemaEditorWidget,
 } from './widgets'
 import 'antd/dist/antd.less'
+import { CompositePanel } from '../src/coms'
 
 GlobalRegistry.registerDesignerLocales({
   'zh-CN': {
@@ -55,6 +60,23 @@ const DesignableField = createDesignableField({
 
 const App = () => {
   const engine = useMemo(() => createDesigner(), [])
+  const [show, setShow] = useState(false)
+  useEffect(() => {
+    setTimeout(() => {
+      GlobalDragSource.appendSourcesByGroup('table', [
+        {
+          componentName: 'DesignableField',
+          props: {
+            type: 'void',
+            // 'x-decorator': 'FormItem',
+            'x-component': 'Table',
+          },
+        },
+      ])
+
+      setShow(true)
+    }, 3000)
+  }, [])
 
   return (
     <Designer engine={engine}>
@@ -74,6 +96,14 @@ const App = () => {
           >
             <OutlineTreeWidget />
           </CompositePanel.Item>
+          {show && (
+            <CompositePanel.Item
+              title="panels.OutlinedTree"
+              icon={<IconWidget infer="Outline" />}
+            >
+              <DragSourceWidget title="sources.Inputs" name="table" />
+            </CompositePanel.Item>
+          )}
         </CompositePanel>
         <Workspace id="form">
           <WorkspacePanel>

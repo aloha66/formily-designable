@@ -29,6 +29,7 @@ import { DesignableFormCollapse } from '../DesignableFormCollapse'
 import { DesignableArrayTable } from '../DesignableArrayTable'
 import { DesignableArrayCards } from '../DesignableArrayCards'
 import { TreeNode } from '@designable/core'
+import { Table } from '../../coms/custom'
 
 const isChildrenComponents =
   (parentName: string, names?: string[]) => (name: string) =>
@@ -138,6 +139,7 @@ export const createOptions = (
       Card,
       Slider,
       Rate,
+      Table,
     },
   }
 }
