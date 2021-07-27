@@ -10,10 +10,11 @@ import {
   isPlainObj,
   toArr,
   isNumberLike,
+  shallowClone,
 } from '@formily/shared'
 import { ValidatorTriggerType, validate } from '@formily/validator'
-import { action, batch, toJS } from '@formily/reactive'
-import { Field, ArrayField, Form } from '../models'
+import { action, batch, toJS, DataChange } from '@formily/reactive'
+import { Field, ArrayField, Form, ObjectField } from '../models'
 import {
   ISpliceArrayStateProps,
   IExchangeArrayStateProps,
@@ -105,6 +106,7 @@ export const applyFieldPatches = (
 ) => {
   patches.forEach(({ type, address, payload }) => {
     if (type === 'remove') {
+      target[address].dispose()
       delete target[address]
     } else if (type === 'update') {
       if (payload) {
@@ -195,15 +197,19 @@ export const validateToFeedbacks = async (
     validateFirst: field.props.validateFirst || field.form.props.validateFirst,
     context: this,
   })
-  const shouldSkipValidate =
-    field.display !== 'visible' || field.pattern !== 'editable'
+  const takeSkipCondition = () => {
+    if (field.display !== 'visible') return true
+    if (field.pattern !== 'editable') return true
+    return false
+  }
+
   batch(() => {
     each(results, (messages, type) => {
       field.setFeedback({
         triggerType,
         type,
         code: pascalCase(`validate-${type}`),
-        messages: shouldSkipValidate ? [] : messages,
+        messages: takeSkipCondition() ? [] : messages,
       } as any)
     })
   })
@@ -303,16 +309,15 @@ export const exchangeArrayState = (
       identifier.indexOf(address) === 0 && identifier.length > address.length
     )
   }
-  const isCrossNode = (identifier: string) => {
+
+  const isFromOrToNode = (identifier: string) => {
     const afterStr = identifier.slice(address.length)
     const number = afterStr.match(/^\.(\d+)/)?.[1]
     if (number === undefined) return false
     const index = Number(number)
-    return (
-      (index <= toIndex && index >= fromIndex) ||
-      (index >= toIndex && index <= fromIndex)
-    )
+    return index === toIndex || index === fromIndex
   }
+
   const moveIndex = (identifier: string) => {
     const preStr = identifier.slice(0, address.length)
     const afterStr = identifier.slice(address.length)
@@ -322,19 +327,16 @@ export const exchangeArrayState = (
     if (index === fromIndex) {
       index = toIndex
     } else {
-      if (fromIndex < toIndex) {
-        index--
-      } else {
-        index++
-      }
+      index = fromIndex
     }
 
     return `${preStr}${afterStr.replace(/^\.\d+/, `.${index}`)}`
   }
+
   batch(() => {
     each(fields, (field, identifier) => {
       if (isArrayChildren(identifier)) {
-        if (isCrossNode(identifier)) {
+        if (isFromOrToNode(identifier)) {
           const newIdentifier = moveIndex(identifier)
           fieldPatches.push({
             type: 'update',
@@ -344,7 +346,7 @@ export const exchangeArrayState = (
           if (!fields[newIdentifier]) {
             fieldPatches.push({
               type: 'remove',
-              address: moveIndex(newIdentifier),
+              address: identifier,
             })
           }
         }
@@ -353,6 +355,62 @@ export const exchangeArrayState = (
     applyFieldPatches(fields, fieldPatches)
   })
   field.form.notify(LifeCycleTypes.ON_FORM_GRAPH_CHANGE)
+}
+
+export const cleanupArrayChildren = (field: ArrayField, start: number) => {
+  const address = field.address.toString()
+  const fields = field.form.fields
+
+  const isArrayChildren = (identifier: string) => {
+    return (
+      identifier.indexOf(address) === 0 && identifier.length > address.length
+    )
+  }
+
+  const isNeedCleanup = (identifier: string) => {
+    const afterStr = identifier.slice(address.length)
+    const number = afterStr.match(/^\.(\d+)/)?.[1]
+    if (number === undefined) return false
+    const index = Number(number)
+    return index >= start
+  }
+
+  batch(() => {
+    each(fields, (field, identifier) => {
+      if (isArrayChildren(identifier) && isNeedCleanup(identifier)) {
+        field.dispose()
+        delete fields[identifier]
+      }
+    })
+  })
+}
+
+export const cleanupObjectChildren = (field: ObjectField, keys: string[]) => {
+  if (keys.length === 0) return
+  const address = field.address.toString()
+  const fields = field.form.fields
+
+  const isObjectChildren = (identifier: string) => {
+    return (
+      identifier.indexOf(address) === 0 && identifier.length > address.length
+    )
+  }
+
+  const isNeedCleanup = (identifier: string) => {
+    const afterStr = identifier.slice(address.length)
+    const key = afterStr.match(/^\.([^.]+)/)?.[1]
+    if (key === undefined) return false
+    return keys.includes(key)
+  }
+
+  batch(() => {
+    each(fields, (field, identifier) => {
+      if (isObjectChildren(identifier) && isNeedCleanup(identifier)) {
+        field.dispose()
+        delete fields[identifier]
+      }
+    })
+  })
 }
 
 export const isEmptyWithField = (field: GeneralField, value: any) => {
@@ -376,16 +434,16 @@ export const initFieldValue = (field: Field, designable: boolean) => {
       field.props.initialValue
     )
     if (isEmptyValue && !isEmptyInitialValue) {
-      field.value = field.props.initialValue
+      field.value = shallowClone(field.props.initialValue)
     } else if (isValid(field.props.value)) {
       field.value = field.props.value
     } else if (isValid(field.props.initialValue)) {
-      field.value = field.props.initialValue
+      field.value = shallowClone(field.props.initialValue)
     }
   }
   if (designable) {
     if (isValid(field.props.initialValue)) {
-      field.initialValue = field.props.initialValue
+      field.initialValue = shallowClone(field.props.initialValue)
     }
     if (isValid(field.props.value)) {
       field.value = field.props.value
@@ -599,4 +657,26 @@ export const applyValuesPatch = (
   }
   if (GlobalState.initializing) return
   patch(source, path)
+}
+
+export const triggerFormInitialValuesChange = (
+  form: Form,
+  change: DataChange
+) => {
+  const path = change.path
+  if (path[path.length - 1] === 'length') return
+  if (path[0] === 'initialValues') {
+    if (change.type === 'add' || change.type === 'set') {
+      applyValuesPatch(form, path.slice(1), change.value)
+    }
+    form.notify(LifeCycleTypes.ON_FORM_INITIAL_VALUES_CHANGE)
+  }
+}
+
+export const triggerFormValuesChange = (form: Form, change: DataChange) => {
+  const path = change.path
+  if (path[path.length - 1] === 'length') return
+  if (path[0] === 'values') {
+    form.notify(LifeCycleTypes.ON_FORM_VALUES_CHANGE)
+  }
 }

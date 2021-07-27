@@ -14,9 +14,11 @@ import {
   isValid,
   uid,
   globalThisPolyfill,
-  defaults,
+  merge,
   clone,
   isPlainObj,
+  isArr,
+  isObj,
 } from '@formily/shared'
 import { Heart } from './Heart'
 import { Field } from './Field'
@@ -48,6 +50,8 @@ import {
   createFieldStateSetter,
   createFieldStateGetter,
   applyValuesPatch,
+  triggerFormInitialValuesChange,
+  triggerFormValuesChange,
 } from '../shared/internals'
 import { isVoidField } from '../shared/checkers'
 import { runEffects } from '../shared/effectbox'
@@ -155,7 +159,7 @@ export class Form<ValueType extends object = any> {
       setPattern: batch,
       setDisplay: batch,
       setState: batch,
-      deleteIntialValuesIn: batch,
+      deleteInitialValuesIn: batch,
       deleteValuesIn: batch,
       setSubmitting: batch,
       setValidating: batch,
@@ -170,15 +174,14 @@ export class Form<ValueType extends object = any> {
   protected makeReactive() {
     if (this.props.designable) return
     this.disposers.push(
-      observe(this.initialValues, (change) => {
-        if (change.type === 'add' || change.type === 'set') {
-          applyValuesPatch(this, change.path.slice(1), change.value)
-        }
-        this.notify(LifeCycleTypes.ON_FORM_INITIAL_VALUES_CHANGE)
-      }),
-      observe(this.values, () => {
-        this.notify(LifeCycleTypes.ON_FORM_VALUES_CHANGE)
-      })
+      observe(
+        this,
+        (change) => {
+          triggerFormInitialValuesChange(this, change)
+          triggerFormValuesChange(this, change)
+        },
+        true
+      )
     )
   }
 
@@ -328,7 +331,10 @@ export class Form<ValueType extends object = any> {
       batch(() => {
         this.fields[identifier] = new ArrayField(
           address,
-          props,
+          {
+            ...props,
+            value: isArr(props.value) ? props.value : [],
+          },
           this,
           this.props.designable
         )
@@ -351,7 +357,10 @@ export class Form<ValueType extends object = any> {
       batch(() => {
         this.fields[identifier] = new ObjectField(
           address,
-          props,
+          {
+            ...props,
+            value: isObj(props.value) ? props.value : {},
+          },
           this,
           this.props.designable
         )
@@ -390,7 +399,7 @@ export class Form<ValueType extends object = any> {
     if (!isPlainObj(values)) return
     untracked(() => {
       if (strategy === 'merge' || strategy === 'deepMerge') {
-        this.values = defaults(this.values, values)
+        this.values = merge(this.values, values)
       } else if (strategy === 'shallowMerge') {
         this.values = Object.assign(this.values, values)
       } else {
@@ -406,7 +415,7 @@ export class Form<ValueType extends object = any> {
     if (!isPlainObj(initialValues)) return
     untracked(() => {
       if (strategy === 'merge' || strategy === 'deepMerge') {
-        this.initialValues = defaults(this.initialValues, initialValues)
+        this.initialValues = merge(this.initialValues, initialValues)
       } else if (strategy === 'shallowMerge') {
         this.initialValues = Object.assign(this.initialValues, initialValues)
       } else {
@@ -441,7 +450,7 @@ export class Form<ValueType extends object = any> {
     })
   }
 
-  deleteIntialValuesIn = (pattern: FormPathPattern) => {
+  deleteInitialValuesIn = (pattern: FormPathPattern) => {
     untracked(() => {
       FormPath.deleteIn(this.initialValues, pattern)
     })

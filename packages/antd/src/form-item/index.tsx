@@ -89,10 +89,9 @@ function useOverflow<
 
   useLayoutEffect(() => {
     if (containerRef.current && contentRef.current) {
-      if (
-        contentRef.current.getBoundingClientRect().width >
-        containerRef.current.getBoundingClientRect().width
-      ) {
+      const contentWidth = contentRef.current.getBoundingClientRect().width
+      const containerWidth = containerRef.current.getBoundingClientRect().width
+      if (contentWidth && containerWidth && containerWidth < contentWidth) {
         if (!overflow) setOverflow(true)
       } else {
         if (overflow) setOverflow(false)
@@ -118,8 +117,10 @@ export const BaseItem: React.FC<IFormItemProps> = (props) => {
   const [active, setActice] = useState(false)
   const formLayout = useFormItemLayout(others)
   const gridSpan = useGridSpan(props.gridSpan)
-  const { containerRef, contentRef, overflow } =
-    useOverflow<HTMLDivElement, HTMLLabelElement>()
+  const { containerRef, contentRef, overflow } = useOverflow<
+    HTMLDivElement,
+    HTMLLabelElement
+  >()
   const {
     label,
     style,

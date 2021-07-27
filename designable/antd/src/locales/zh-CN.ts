@@ -259,6 +259,7 @@ const UploadLocale = {
   withCredentials: '携带Cookie',
   maxCount: '最大数量',
   method: '方法',
+  textContent: '上传文案',
 }
 
 const FormGridLocale = {
@@ -375,7 +376,7 @@ const ArrayOperationsLocale = {
 
 export default {
   'zh-CN': {
-    components: {
+    Components: {
       Root: '根组件',
       DesignableForm: '表单',
       DesignableField: '字段',
@@ -425,16 +426,18 @@ export default {
       },
       FormItem: '表单项容器',
     },
-    settings: {
+    Settings: {
       ...FieldLocale,
       ...ComponentLocale,
     },
-    droppable: '可以拖入组件',
-    addTabPane: '添加选项卡',
-    addCollapsePanel: '添加手风琴卡片',
-    addTableColumn: '添加表格列',
-    addTableSortHandle: '添加排序',
-    addIndex: '添加索引',
-    addOperation: '添加操作',
+    Common: {
+      droppable: '可以拖入组件',
+      addTabPane: '添加选项卡',
+      addCollapsePanel: '添加手风琴卡片',
+      addTableColumn: '添加表格列',
+      addTableSortHandle: '添加排序',
+      addIndex: '添加索引',
+      addOperation: '添加操作',
+    },
   },
 }

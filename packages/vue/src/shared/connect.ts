@@ -1,17 +1,19 @@
-/* eslint-disable vue/one-component-per-file */
 import { Vue2Component } from '../types/vue2'
-import { isVue2, markRaw, defineComponent, DefineComponent } from 'vue-demi'
+import { isVue2, markRaw, defineComponent } from 'vue-demi'
 import { isFn, isStr, FormPath, each } from '@formily/shared'
-import { isVoidField } from '@formily/core'
+import { isVoidField, GeneralField } from '@formily/core'
 import { observer } from '@formily/reactive-vue'
-import {
+
+import { useField } from '../hooks/useField'
+import h from './h'
+
+import type {
   VueComponent,
   IComponentMapper,
   IStateMapper,
   VueComponentProps,
+  DefineComponent,
 } from '../types'
-import { useField } from '../hooks/useField'
-import h from './h'
 
 export function mapProps<T extends VueComponent = VueComponent>(
   ...args: IStateMapper<VueComponentProps<T>>[]
@@ -25,7 +27,7 @@ export function mapProps<T extends VueComponent = VueComponent>(
 
           const transform = (
             input: VueComponentProps<T>,
-            field: Formily.Core.Types.GeneralField
+            field: GeneralField
           ) =>
             args.reduce((props, mapper) => {
               if (isFn(mapper)) {
@@ -46,10 +48,9 @@ export function mapProps<T extends VueComponent = VueComponent>(
             }, input)
 
           return () => {
-            const newAttrs = transform(
-              { ...attrs } as VueComponentProps<T>,
-              fieldRef.value
-            )
+            const newAttrs = fieldRef.value
+              ? transform({ ...attrs } as VueComponentProps<T>, fieldRef.value)
+              : { ...attrs }
             return h(
               target,
               {
@@ -68,27 +69,30 @@ export function mapProps<T extends VueComponent = VueComponent>(
 }
 
 export function mapReadPretty<T extends VueComponent, C extends VueComponent>(
-  component: C
+  component: C,
+  readPrettyProps?: Record<string, any>
 ) {
   return (target: T) => {
     return observer(
       defineComponent({
         setup(props, { attrs, slots, listeners }: Record<string, any>) {
           const fieldRef = useField()
-          return () =>
-            h(
-              !isVoidField(fieldRef.value) &&
-                fieldRef.value.pattern === 'readPretty'
+          return () => {
+            const field = fieldRef.value
+            return h(
+              field && !isVoidField(field) && field.pattern === 'readPretty'
                 ? component
                 : target,
               {
                 attrs: {
+                  ...readPrettyProps,
                   ...attrs,
                 },
                 on: listeners,
               },
               slots
             )
+          }
         },
       }) as unknown as DefineComponent<VueComponentProps<T>>
     )
@@ -102,7 +106,7 @@ export function connect<T extends VueComponent>(
   const Component = args.reduce((target: VueComponent, mapper) => {
     return mapper(target)
   }, target)
-
+  /* istanbul ignore else */
   if (isVue2) {
     const functionalComponent = {
       functional: true,

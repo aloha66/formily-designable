@@ -35,7 +35,7 @@ export default {
     playground: path.resolve(__dirname, './main'),
   },
   output: {
-    path: path.resolve(__dirname, '../public'),
+    path: path.resolve(__dirname, '../build'),
     filename: '[name].[hash].bundle.js',
   },
   resolve: {

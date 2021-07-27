@@ -1,3 +1,4 @@
+import { IGeneralFieldState } from '@formily/core'
 export type SchemaEnum<Message> = Array<
   | string
   | number
@@ -58,17 +59,19 @@ export type SchemaEffectTypes =
 
 export type SchemaReaction<Field = any> =
   | {
-      dependencies?: string[] | Record<string, string>
+      dependencies?:
+        | Array<string | { name?: string; source?: string; property?: string }>
+        | Record<string, string>
       when?: string | boolean
       target?: string
       effects?: SchemaEffectTypes[]
       fulfill?: {
-        state?: Stringify<Formily.Core.Types.IGeneralFieldState>
+        state?: Stringify<IGeneralFieldState>
         schema?: ISchema
         run?: string
       }
       otherwise?: {
-        state?: Stringify<Formily.Core.Types.IGeneralFieldState>
+        state?: Stringify<IGeneralFieldState>
         schema?: ISchema
         run?: string
       }
@@ -121,7 +124,7 @@ export interface ISchemaFieldFactoryOptions<
 }
 
 export interface ISchemaFieldUpdateRequest {
-  state?: Stringify<Formily.Core.Types.IFieldState>
+  state?: Stringify<IGeneralFieldState>
   schema?: ISchema
   run?: string
 }
@@ -268,6 +271,4 @@ export type ISchema<
   ['x-read-only']?: boolean
 
   ['x-read-pretty']?: boolean
-
-  [key: string]: any
 }>

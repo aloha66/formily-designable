@@ -8,7 +8,6 @@ import {
 import { define, observable, autorun, batch } from '@formily/reactive'
 import {
   JSXComponent,
-  JSXComponenntProps,
   LifeCycleTypes,
   FieldDisplayTypes,
   FieldPatternTypes,
@@ -51,7 +50,7 @@ export class VoidField<Decorator = any, Component = any, TextType = any> {
   form: Form
   props: IVoidFieldProps<Decorator, Component>
 
-  private disposers: (() => void)[] = []
+  protected disposers: (() => void)[] = []
 
   constructor(
     address: FormPathPattern,
@@ -176,6 +175,11 @@ export class VoidField<Decorator = any, Component = any, TextType = any> {
 
   get display(): FieldDisplayTypes {
     const parentDisplay = this.parent?.display
+    if (parentDisplay && parentDisplay !== 'visible') {
+      if (this.selfDisplay && this.selfDisplay !== 'visible')
+        return this.selfDisplay
+      return parentDisplay
+    }
     if (isValid(this.selfDisplay)) return this.selfDisplay
     return parentDisplay || this.form.display || 'visible'
   }
@@ -288,9 +292,9 @@ export class VoidField<Decorator = any, Component = any, TextType = any> {
     this.pattern = type
   }
 
-  setComponent = <C extends JSXComponent>(
+  setComponent = <C extends JSXComponent, ComponentProps extends object = {}>(
     component?: C,
-    props?: JSXComponenntProps<C>
+    props?: ComponentProps
   ) => {
     if (component) {
       this.componentType = component as any
@@ -301,8 +305,8 @@ export class VoidField<Decorator = any, Component = any, TextType = any> {
     }
   }
 
-  setComponentProps = <C extends JSXComponent = Component>(
-    props?: JSXComponenntProps<C>
+  setComponentProps = <ComponentProps extends object = {}>(
+    props?: ComponentProps
   ) => {
     if (props) {
       this.componentProps = this.componentProps || {}
@@ -310,9 +314,9 @@ export class VoidField<Decorator = any, Component = any, TextType = any> {
     }
   }
 
-  setDecorator = <D extends JSXComponent>(
+  setDecorator = <D extends JSXComponent, ComponentProps extends object = {}>(
     component?: D,
-    props?: JSXComponenntProps<D>
+    props?: ComponentProps
   ) => {
     if (component) {
       this.decoratorType = component as any
@@ -323,8 +327,8 @@ export class VoidField<Decorator = any, Component = any, TextType = any> {
     }
   }
 
-  setDecoratorProps = <D extends JSXComponent = Decorator>(
-    props?: JSXComponenntProps<D>
+  setDecoratorProps = <ComponentProps extends object = {}>(
+    props?: ComponentProps
   ) => {
     if (props) {
       this.decoratorProps = this.decoratorProps || {}

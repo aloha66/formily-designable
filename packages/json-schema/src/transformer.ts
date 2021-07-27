@@ -1,4 +1,5 @@
-import { untracked } from '@formily/reactive'
+/* istanbul ignore file */
+import { untracked, autorun, observable } from '@formily/reactive'
 import {
   isBool,
   isArr,
@@ -33,6 +34,12 @@ import {
   onFieldValidateEnd,
   onFieldValidateFailed,
   onFieldValidateSuccess,
+  FieldValidator,
+  IFieldState,
+  IFieldFactoryProps,
+  GeneralField,
+  Form,
+  Field,
 } from '@formily/core'
 
 const FieldEffects = {
@@ -48,7 +55,7 @@ const FieldEffects = {
   onFieldValidateSuccess,
 }
 
-const getValidator = (schema: Schema): Formily.Core.Types.FieldValidator => {
+const getValidator = (schema: Schema): FieldValidator => {
   let rules = []
   if (schema.format) {
     rules.push({ format: schema.format })
@@ -185,9 +192,9 @@ const getDataSource = (schema: Schema) => {
 
 const findComponent = (
   type: 'component' | 'decorator',
-  path: Formily.Core.Types.FormPathPattern,
+  path: FormPathPattern,
   options: ISchemaFieldFactoryOptions,
-  state: Formily.Core.Types.IFieldState
+  state: IFieldState
 ) => {
   let component: any = state?.[type]?.[0]
 
@@ -202,7 +209,7 @@ const findComponent = (
       }
     }
   }
-  if (isFn(path)) {
+  if (isFn(path) || (path?.['$$typeof'] && isFn(path['type']))) {
     return path
   }
   return component
@@ -211,9 +218,9 @@ const findComponent = (
 const getBaseProps = (
   schema: Schema,
   options: ISchemaFieldFactoryOptions,
-  state?: Formily.Core.Types.IFieldState
+  state?: IFieldState
 ) => {
-  const props: Partial<Formily.Core.Types.IFieldFactoryProps<any, any>> = {}
+  const props: Partial<IFieldFactoryProps<any, any>> = {}
 
   const validator = getValidator(schema)
 
@@ -288,7 +295,7 @@ const getBaseProps = (
     props.dataSource = dataSource
   }
 
-  if (!isValid(editable)) {
+  if (isValid(editable)) {
     props.editable = editable
   }
 
@@ -347,7 +354,7 @@ const getRequired = (schema: Schema) => {
 
 const getReactions = (schema: ISchema, options: ISchemaFieldFactoryOptions) => {
   const setSchemaFieldState = (
-    field: Formily.Core.Types.GeneralField,
+    field: GeneralField,
     request: ISchemaFieldUpdateRequest,
     compile: (expression: any) => any
   ) => {
@@ -366,7 +373,7 @@ const getReactions = (schema: ISchema, options: ISchemaFieldFactoryOptions) => {
   }
 
   const setSchemaFieldStateByTarget = (
-    form: Formily.Core.Models.Form,
+    form: Form,
     target: FormPathPattern,
     request: ISchemaFieldUpdateRequest,
     compile: (expression: any, state?: any) => any
@@ -391,22 +398,42 @@ const getReactions = (schema: ISchema, options: ISchemaFieldFactoryOptions) => {
     }
   }
 
-  const queryDepdency = (field: Formily.Core.Models.Field, pattern: string) => {
+  const queryDependency = (
+    field: Field,
+    pattern: string,
+    property?: string
+  ) => {
     const [target, path] = String(pattern).split(/\s*#\s*/)
-    return field.query(target).getIn(path || 'value')
+    return field.query(target).getIn(path || property || 'value')
   }
 
   const parseDependencies = (
-    field: Formily.Core.Models.Field,
-    dependencies: string[] | object
+    field: Field,
+    dependencies:
+      | Array<string | { name?: string; source?: string; property?: string }>
+      | object
   ) => {
     if (isArr(dependencies)) {
-      return dependencies.map((pattern) => queryDepdency(field, pattern))
+      const results = []
+      dependencies.forEach((pattern) => {
+        if (isStr(pattern)) {
+          results.push(queryDependency(field, pattern))
+        } else if (isPlainObj(pattern)) {
+          if (pattern.name && pattern.source) {
+            results[pattern.name] = queryDependency(
+              field,
+              pattern.source,
+              pattern.property
+            )
+          }
+        }
+      })
+      return results
     } else if (isPlainObj(dependencies)) {
       return reduce(
         dependencies,
         (buf, pattern, key) => {
-          buf[key] = queryDepdency(field, pattern)
+          buf[key] = queryDependency(field, pattern)
           return buf
         },
         {}
@@ -415,7 +442,7 @@ const getReactions = (schema: ISchema, options: ISchemaFieldFactoryOptions) => {
     return []
   }
 
-  return (field: Formily.Core.Models.Field) => {
+  return (field: Field) => {
     const reactions: SchemaReactions = toArr(schema['x-reactions'])
     reactions.forEach((reaction) => {
       if (!reaction) return
@@ -427,6 +454,11 @@ const getReactions = (schema: ISchema, options: ISchemaFieldFactoryOptions) => {
         const $form = field.form
         const $deps = parseDependencies(field, reaction.dependencies)
         const $dependencies = $deps
+        const $observable = (target: any, deps?: any[]) =>
+          autorun.memo(() => observable(target), deps)
+        const $props = (props: any) => field.setComponentProps(props)
+        const $effect = autorun.effect
+        const $memo = autorun.memo
         const scope = {
           ...options.scope,
           $target: null,
@@ -434,6 +466,10 @@ const getReactions = (schema: ISchema, options: ISchemaFieldFactoryOptions) => {
           $self,
           $deps,
           $dependencies,
+          $observable,
+          $effect,
+          $memo,
+          $props,
         }
         const compile = (expression: any, target?: any) => {
           if (target) {
@@ -455,7 +491,7 @@ const getReactions = (schema: ISchema, options: ISchemaFieldFactoryOptions) => {
             setSchemaFieldState(field, reaction.fulfill, compile)
           }
           if (isStr(reaction.fulfill?.run)) {
-            compile(`{{async function(){${reaction.fulfill?.run}}}}`)()
+            compile(`{{function(){${reaction.fulfill?.run}}}}`)()
           }
         } else {
           if (reaction.target) {
@@ -496,7 +532,7 @@ const getReactions = (schema: ISchema, options: ISchemaFieldFactoryOptions) => {
 export const transformSchemaToFieldProps = (
   schema: Schema,
   options: ISchemaFieldFactoryOptions
-): Formily.Core.Types.IFieldFactoryProps<any, any> => {
+): IFieldFactoryProps<any, any> => {
   const required = getRequired(schema)
   const reactions = getReactions(schema, options)
   const props = getBaseProps(schema, options)

@@ -1,6 +1,6 @@
 {
   "name": "@formily/antd",
-  "version": "2.0.0-beta.71",
+  "version": "2.0.0-beta.82",
   "license": "MIT",
   "main": "lib",
   "module": "esm",
@@ -13,7 +13,8 @@
     "esm/*.js",
     "lib/*.js",
     "src/*.ts",
-    "*.less"
+    "*.less",
+    "**/*/style.js"
   ],
   "repository": {
     "type": "git",
@@ -51,12 +52,12 @@
   },
   "dependencies": {
     "@ant-design/icons": "^4.0.0",
-    "@formily/core": "2.0.0-beta.71",
-    "@formily/json-schema": "2.0.0-beta.71",
-    "@formily/react": "2.0.0-beta.71",
-    "@formily/reactive": "2.0.0-beta.71",
-    "@formily/reactive-react": "2.0.0-beta.71",
-    "@formily/shared": "2.0.0-beta.71",
+    "@formily/core": "2.0.0-beta.82",
+    "@formily/json-schema": "2.0.0-beta.82",
+    "@formily/react": "2.0.0-beta.82",
+    "@formily/reactive": "2.0.0-beta.82",
+    "@formily/reactive-react": "2.0.0-beta.82",
+    "@formily/shared": "2.0.0-beta.82",
     "@juggle/resize-observer": "^3.3.1",
     "classnames": "^2.2.6",
     "react-sortable-hoc": "^1.11.0",

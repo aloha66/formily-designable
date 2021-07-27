@@ -1,3 +1,5 @@
+export * from './datatree'
+
 export type PropertyKey = string | number | symbol
 
 export type OperationType =
@@ -26,6 +28,16 @@ export interface IChange {
   type?: OperationType
 }
 
+export interface IEffectQueueItem {
+  dispose?: void | Dispose
+  deps?: any[]
+}
+
+export interface IMemoQueueItem {
+  value?: any
+  deps?: any[]
+}
+
 export interface IVisitor<Value = any, Target = any> {
   target?: Target
   key?: PropertyKey
@@ -42,15 +54,29 @@ export type ObservableListener = (operation: IOperation) => void
 
 export type ObservablePath = Array<string | number>
 
+export type Dispose = () => void
+
+export type Effect = () => void | Dispose
+
 export type Reaction = ((...args: any[]) => any) & {
+  _boundary?: number
   _name?: string
   _isComputed?: boolean
   _dirty?: boolean
   _context?: any
+  _disposed?: boolean
   _property?: PropertyKey
-  _computedsSet?: Set<Reaction>
+  _computesSet?: Set<Reaction>
   _reactionsSet?: Set<ReactionsMap>
   _scheduler?: (reaction: Reaction) => void
+  _memos?: {
+    queue: IMemoQueueItem[]
+    cursor: number
+  }
+  _effects?: {
+    queue: IEffectQueueItem[]
+    cursor: number
+  }
 }
 
 export type ReactionsMap = Map<PropertyKey, Set<Reaction>>

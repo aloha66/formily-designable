@@ -1,15 +1,32 @@
 import React, { Fragment, useLayoutEffect, useRef, useState } from 'react'
-import ReactDOM, { createPortal } from 'react-dom'
-import { createForm } from '@formily/core'
-import { FormProvider } from '@formily/react'
-import { isNum, isStr, isBool, isFn } from '@formily/shared'
-import { Drawer } from 'antd'
-import { DrawerProps } from 'antd/lib/drawer'
-import { usePrefixCls } from '../__builtins__'
+import { createPortal } from 'react-dom'
+import {
+  createForm,
+  IFormProps,
+  Form,
+  onFormSubmitSuccess,
+} from '@formily/core'
+import { toJS } from '@formily/reactive'
+import { FormProvider, observer } from '@formily/react'
+import {
+  isNum,
+  isStr,
+  isBool,
+  isFn,
+  applyMiddleware,
+  IMiddleware,
+} from '@formily/shared'
+import { Drawer, DrawerProps } from 'antd'
+import {
+  usePrefixCls,
+  createPortalProvider,
+  createPortalRoot,
+  loading,
+} from '../__builtins__'
 
-type FormDrawerContent =
+type FormDrawerRenderer =
   | React.ReactElement
-  | ((resolve: () => any, reject: () => any) => React.ReactElement)
+  | ((form: Form) => React.ReactElement)
 
 type DrawerTitle = string | number | React.ReactElement
 
@@ -30,30 +47,42 @@ const getDrawerProps = (props: any): DrawerProps => {
 }
 
 export interface IFormDrawer {
-  open(props?: Formily.Core.Types.IFormProps): Promise<any>
+  open(props?: IFormProps): Promise<any>
   close(): void
-}
-
-export interface IFormDrawerComponentProps {
-  content: FormDrawerContent
-  resolve: () => any
-  reject: () => any
 }
 
 export function FormDrawer(
   title: DrawerProps,
-  content: FormDrawerContent
+  id: string,
+  renderer: FormDrawerRenderer
+): IFormDrawer
+export function FormDrawer(
+  title: DrawerProps,
+  id: FormDrawerRenderer,
+  renderer: unknown
 ): IFormDrawer
 export function FormDrawer(
   title: DrawerTitle,
-  content: FormDrawerContent
+  id: string,
+  renderer: FormDrawerRenderer
 ): IFormDrawer
-export function FormDrawer(title: any, content: any): IFormDrawer {
+export function FormDrawer(
+  title: DrawerTitle,
+  id: FormDrawerRenderer,
+  renderer: unknown
+): IFormDrawer
+export function FormDrawer(title: any, id: any, renderer: any): IFormDrawer {
+  if (isFn(id) || React.isValidElement(id)) {
+    renderer = id
+    id = 'form-drawer'
+  }
   const env = {
-    root: document.createElement('div'),
+    host: document.createElement('div'),
+    openMiddlewares: [],
     form: null,
     promise: null,
   }
+  const root = createPortalRoot(env.host, id)
   const props = getDrawerProps(title)
   const drawer = {
     width: '40%',
@@ -65,72 +94,62 @@ export function FormDrawer(title: any, content: any): IFormDrawer {
     afterVisibleChange: (visible: boolean) => {
       props?.afterVisibleChange?.(visible)
       if (visible) return
-      ReactDOM.unmountComponentAtNode(env.root)
-      env.root?.parentNode?.removeChild(env.root)
-      env.root = undefined
+      root.unmount()
     },
   }
-  const component = (props: IFormDrawerComponentProps) => {
+  const DrawerContent = observer(() => {
+    return <Fragment>{isFn(renderer) ? renderer(env.form) : renderer}</Fragment>
+  })
+  const renderDrawer = (visible = true) => {
     return (
-      <Fragment>
-        {isFn(props.content)
-          ? props.content(props.resolve, props.reject)
-          : props.content}
-      </Fragment>
-    )
-  }
-  const render = (visible = true, resolve?: () => any, reject?: () => any) => {
-    ReactDOM.render(
       <Drawer {...drawer} visible={visible}>
         <FormProvider form={env.form}>
-          {React.createElement(component, {
-            content,
-            resolve,
-            reject,
-          })}
+          <DrawerContent />
         </FormProvider>
-      </Drawer>,
-      env.root
+      </Drawer>
     )
   }
-  document.body.appendChild(env.root)
+
+  document.body.appendChild(env.host)
   const formDrawer = {
-    open: (props: Formily.Core.Types.IFormProps) => {
+    forOpen: (middleware: IMiddleware<IFormProps>) => {
+      if (isFn(middleware)) {
+        env.openMiddlewares.push(middleware)
+      }
+      return formDrawer
+    },
+    open: (props: IFormProps) => {
       if (env.promise) return env.promise
-      env.form = env.form || createForm(props)
-      env.promise = new Promise((resolve) => {
-        render(
-          false,
-          () => {
-            env.form.submit((values: any) => {
-              resolve(values)
-              formDrawer.close()
-            })
-          },
-          () => {
-            formDrawer.close()
-          }
-        )
-        setTimeout(() => {
-          render(
-            true,
-            () => {
-              env.form.submit((values: any) => {
-                resolve(values)
-                formDrawer.close()
-              })
-            },
-            () => {
-              formDrawer.close()
-            }
+      env.promise = new Promise(async (resolve, reject) => {
+        try {
+          props = await loading(() =>
+            applyMiddleware(props, env.openMiddlewares)
           )
-        })
+          env.form =
+            env.form ||
+            createForm({
+              ...props,
+              effects(form) {
+                onFormSubmitSuccess(() => {
+                  resolve(toJS(form.values))
+                  formDrawer.close()
+                })
+                props?.effects?.(form)
+              },
+            })
+        } catch (e) {
+          reject(e)
+        }
+        root.render(() => renderDrawer(false))
+        setTimeout(() => {
+          root.render(() => renderDrawer(true))
+        }, 16)
       })
       return env.promise
     },
     close: () => {
-      if (!env.root) return
-      render(false)
+      if (!env.host) return
+      root.render(() => renderDrawer(false))
     },
   }
   return formDrawer
@@ -166,5 +185,7 @@ const DrawerFooter: React.FC = (props) => {
 }
 
 FormDrawer.Footer = DrawerFooter
+
+FormDrawer.Portal = createPortalProvider('form-drawer')
 
 export default FormDrawer

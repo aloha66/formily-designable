@@ -329,8 +329,10 @@ interface toJSON {
 #### 签名
 
 ```ts
+import { IFieldFactoryProps } from '@formily/core'
+
 interface toFieldProps {
-  (): Formily.Core.Types.IFieldFactoryProps
+  (): IFieldFactoryProps
 }
 ```
 
@@ -460,9 +462,10 @@ import { Schema } from '@formily/react'
 Schema.registerVoidComponents(['card', 'tab', 'step'])
 ```
 
-<Alert type="warning">
-  注意，该 api 需要配合 <code>enablePolyfills(['1.0'])</code> 使用
-</Alert>
+::: warning
+
+  <p>注意，该 api 需要配合 <code>enablePolyfills(['1.0'])</code> 使用</p>
+:::
 
 ### registerTypeDefaultComponents
 
@@ -629,6 +632,8 @@ Schema 联动协议，如果 reaction 对象里包含 target，则代表主动�
 #### 签名
 
 ```ts
+import { IGeneralFieldState } from '@formily/core'
+
 type SchemaReactionEffect =
   | 'onFieldInit'
   | 'onFieldMount'
@@ -649,13 +654,13 @@ type SchemaReaction<Field = any> =
       effects?: SchemaReactionEffect[] //主动模式下的独立生命周期钩子
       fulfill?: {
         //满足条件
-        state?: Formily.Core.Types.IGeneralFieldState //更新状态
+        state?: IGeneralFieldState //更新状态
         schema?: ISchema //更新Schema
         run?: string //执行语句
       }
       otherwise?: {
         //不满足条件
-        state?: Formily.Core.Types.IGeneralFieldState //更新状态
+        state?: IGeneralFieldState //更新状态
         schema?: ISchema //更新Schema
         run?: string //执行语句
       }
@@ -953,7 +958,7 @@ type SchemaReactions<Field = any> =
 
 ### $form
 
-只能在 x-reactions 中的表达式消费，代表当前字段实例
+只能在 x-reactions 中的表达式消费，代表当前 Form 实例
 
 ### $target
 

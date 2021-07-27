@@ -265,6 +265,7 @@ const UploadLocale = {
   withCredentials: 'withCredentials',
   maxCount: 'Max Count',
   method: 'Method',
+  textContent: 'Text Content',
 }
 
 const FormGridLocale = {
@@ -382,7 +383,7 @@ const ArrayOperationsLocale = {
 
 export default {
   'en-US': {
-    components: {
+    Components: {
       Root: 'Root',
       DesignableForm: 'Form',
       DesignableField: 'Field',
@@ -431,16 +432,18 @@ export default {
       },
       FormItem: 'FormItem',
     },
-    settings: {
+    Settings: {
       ...FieldLocale,
       ...ComponentLocale,
     },
-    droppable: 'Droppable',
-    addTabPane: 'Add Panel',
-    addCollapsePanel: 'Add Panel',
-    addTableColumn: 'Add Column',
-    addTableSortHandle: 'Add Sort Handle',
-    addIndex: 'Add Index',
-    addOperation: 'Add Operations',
+    Common: {
+      droppable: 'Droppable',
+      addTabPane: 'Add Panel',
+      addCollapsePanel: 'Add Panel',
+      addTableColumn: 'Add Column',
+      addTableSortHandle: 'Add Sort Handle',
+      addIndex: 'Add Index',
+      addOperation: 'Add Operations',
+    },
   },
 }

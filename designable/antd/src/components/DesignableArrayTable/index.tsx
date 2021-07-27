@@ -217,7 +217,7 @@ export const DesignableArrayTable: React.FC<TableProps<any>> = observer(
         <LoadTemplate
           actions={[
             {
-              title: 'addTableSortHandle',
+              title: 'Common.addTableSortHandle',
               onClick: () => {
                 if (
                   hasNodeByComponentPath(node, [
@@ -251,7 +251,7 @@ export const DesignableArrayTable: React.FC<TableProps<any>> = observer(
               },
             },
             {
-              title: 'addIndex',
+              title: 'Common.addIndex',
               onClick: () => {
                 if (
                   hasNodeByComponentPath(node, [
@@ -295,9 +295,9 @@ export const DesignableArrayTable: React.FC<TableProps<any>> = observer(
               },
             },
             {
-              title: 'addTableColumn',
+              title: 'Common.addTableColumn',
               onClick: () => {
-                const operationNpde = findNodeByComponentPath(node, [
+                const operationNode = findNodeByComponentPath(node, [
                   'ArrayTable',
                   '*',
                   'ArrayTable.Column',
@@ -319,15 +319,15 @@ export const DesignableArrayTable: React.FC<TableProps<any>> = observer(
                     },
                   },
                 })
-                if (operationNpde) {
-                  operationNpde.parent.insertBefore(tableColumn)
+                if (operationNode) {
+                  operationNode.parent.insertBefore(tableColumn)
                 } else {
                   ensureObjectItemsNode(node).appendNode(tableColumn)
                 }
               },
             },
             {
-              title: 'addOperation',
+              title: 'Common.addOperation',
               onClick: () => {
                 const oldOperationNode = findNodeByComponentPath(node, [
                   'ArrayTable',

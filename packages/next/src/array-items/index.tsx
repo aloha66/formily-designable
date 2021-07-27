@@ -1,4 +1,5 @@
 import React from 'react'
+import { ArrayField } from '@formily/core'
 import {
   useField,
   observer,
@@ -13,7 +14,11 @@ import { ArrayBase, ArrayBaseMixins } from '../array-base'
 
 type ComposedArrayItems = React.FC<React.HTMLAttributes<HTMLDivElement>> &
   ArrayBaseMixins & {
-    Item?: React.FC<React.HTMLAttributes<HTMLDivElement>>
+    Item?: React.FC<
+      React.HTMLAttributes<HTMLDivElement> & {
+        type?: 'card' | 'divide'
+      }
+    >
   }
 
 const SortableItem = SortableElement(
@@ -53,7 +58,7 @@ const useAddition = () => {
 }
 
 export const ArrayItems: ComposedArrayItems = observer((props) => {
-  const field = useField<Formily.Core.Models.ArrayField>()
+  const field = useField<ArrayField>()
   const prefixCls = usePrefixCls('formily-array-items')
   const schema = useFieldSchema()
   const addition = useAddition()
@@ -102,7 +107,7 @@ ArrayItems.Item = (props) => {
     <div
       {...props}
       onChange={() => {}}
-      className={cls(`${prefixCls}-card`, props.className)}
+      className={cls(`${prefixCls}-${props.type || 'card'}`, props.className)}
     >
       {props.children}
     </div>

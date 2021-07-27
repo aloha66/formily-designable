@@ -1,4 +1,5 @@
 import { createForm } from '../'
+import { onFieldValueChange, onFormValuesChange } from '../effects'
 import { attach } from './shared'
 
 test('create array field', () => {
@@ -239,4 +240,80 @@ test('fault tolerance', () => {
   array2.moveDown(0)
   array2.moveDown(1)
   array2.moveDown(2)
+})
+
+test('array field move api with children', async () => {
+  const form = attach(createForm())
+  attach(
+    form.createField({
+      name: 'other',
+    })
+  )
+  const array = attach(
+    form.createArrayField({
+      name: 'array',
+    })
+  )
+  attach(
+    form.createArrayField({
+      name: '0',
+      basePath: 'array',
+    })
+  )
+  attach(
+    form.createArrayField({
+      name: '1',
+      basePath: 'array',
+    })
+  )
+  attach(
+    form.createArrayField({
+      name: '2',
+      basePath: 'array',
+    })
+  )
+  attach(
+    form.createArrayField({
+      name: 'name',
+      basePath: 'array.2',
+    })
+  )
+  await array.move(0, 2)
+  expect(form.fields['array.0.name']).not.toBeUndefined()
+  expect(form.fields['array.2.name']).toBeUndefined()
+})
+
+test('array field remove memo leak', async () => {
+  const handler = jest.fn()
+  const valuesChange = jest.fn()
+  const form = attach(
+    createForm({
+      effects() {
+        onFormValuesChange(valuesChange)
+        onFieldValueChange('*', handler)
+      },
+    })
+  )
+  const array = attach(
+    form.createArrayField({
+      name: 'array',
+    })
+  )
+  await array.push('')
+  attach(
+    form.createField({
+      name: '0',
+      basePath: 'array',
+    })
+  )
+  await array.remove(0)
+  await array.push('')
+  attach(
+    form.createField({
+      name: '0',
+      basePath: 'array',
+    })
+  )
+  expect(handler).toBeCalledTimes(1)
+  expect(valuesChange).toBeCalledTimes(4)
 })

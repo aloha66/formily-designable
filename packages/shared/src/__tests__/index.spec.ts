@@ -22,6 +22,9 @@ import { merge } from '../merge'
 import { instOf } from '../instanceof'
 import { isFn, isHTMLElement, isNumberLike, isReactElement } from '../checkers'
 import { defaults } from '../defaults'
+import { applyMiddleware } from '../middleware'
+
+const sleep = (d = 100) => new Promise((resolve) => setTimeout(resolve, d))
 
 describe('array', () => {
   test('toArr', () => {
@@ -131,7 +134,7 @@ describe('array', () => {
     ).toBeTruthy()
     expect(
       isEqual(
-        map(obj, (item, key) => `${item}-copy`),
+        map(obj, (item) => `${item}-copy`),
         { k1: 'v1-copy', k2: 'v2-copy' }
       )
     ).toBeTruthy()
@@ -499,6 +502,7 @@ describe('shared Subscribable', () => {
     objWithCustomNotify.subscribe(cb)
     objWithCustomNotify.notify({ key3: 'val3' })
     expect(customNotify).toBeCalledTimes(1)
+    objWithCustomNotify.unsubscribe()
   })
 })
 
@@ -693,4 +697,30 @@ test('defaults', () => {
     ee: { value: 555 },
     mm: { value: 123 },
   })
+})
+
+test('applyMiddleware', async () => {
+  expect(await applyMiddleware(0)).toEqual(0)
+  expect(
+    await applyMiddleware(0, [
+      (num: number, next) => next(num + 1),
+      (num: number, next) => next(num + 1),
+      (num: number, next) => next(num + 1),
+    ])
+  ).toEqual(3)
+  expect(
+    await applyMiddleware(0, [
+      (num: number, next) => next(),
+      (num: number, next) => next(num + 1),
+      (num: number, next) => next(num + 1),
+    ])
+  ).toEqual(2)
+  const resolved = jest.fn()
+  applyMiddleware(0, [
+    (num: number, next) => next(num + 1),
+    () => '123',
+    (num: number, next) => next(num + 1),
+  ]).then(resolved)
+  await sleep(16)
+  expect(resolved).toBeCalledTimes(0)
 })

@@ -1,20 +1,17 @@
-import { provide, defineComponent, DefineComponent } from 'vue-demi'
+import { provide, defineComponent, computed, watch } from 'vue-demi'
 import { useField, useForm } from '../hooks'
 import { useAttach } from '../hooks/useAttach'
-import { VueComponent, IFieldProps } from '../types'
 import ReactiveField from './ReactiveField'
 import { observer } from '@formily/reactive-vue'
 import { FieldSymbol } from '../shared/context'
 import h from '../shared/h'
 import { getRawComponent } from '../utils/getRawComponent'
 
-type ObjectFieldProps = IFieldProps<VueComponent, VueComponent>
+import type { IObjectFieldProps, DefineComponent } from '../types'
 
 export default observer(
-  defineComponent<ObjectFieldProps>({
+  defineComponent<IObjectFieldProps>({
     name: 'ObjectField',
-    /* eslint-disable vue/require-prop-types  */
-    /* eslint-disable vue/require-default-prop */
     props: {
       name: {},
       title: {},
@@ -62,22 +59,30 @@ export default observer(
       validator: {},
       reactions: [Array, Function],
     },
-    setup(props: ObjectFieldProps, { slots }) {
-      // const { track } = useObserver()
+    setup(props: IObjectFieldProps, { slots }) {
       const formRef = useForm()
       const parentRef = useField()
-      const basePath =
+
+      const basePath = computed(() =>
         props.basePath !== undefined
           ? props.basePath
           : parentRef?.value?.address
-      const fieldRef = useAttach(
-        () =>
-          formRef.value.createObjectField({
-            ...props,
-            basePath,
-            ...getRawComponent(props),
-          }),
-        [() => props.name, formRef]
+      )
+      const createField = () =>
+        formRef.value.createObjectField({
+          ...props,
+          basePath: basePath.value,
+          ...getRawComponent(props),
+        })
+      const [fieldRef, checker] = useAttach(createField())
+      watch(
+        () => props,
+        () => (fieldRef.value = checker(createField())),
+        { deep: true }
+      )
+      watch(
+        [formRef, parentRef],
+        () => (fieldRef.value = checker(createField()))
       )
 
       provide(FieldSymbol, fieldRef)
@@ -102,5 +107,5 @@ export default observer(
         return h(ReactiveField, componentData, children)
       }
     },
-  }) as unknown as DefineComponent<ObjectFieldProps>
+  }) as unknown as DefineComponent<IObjectFieldProps>
 )
