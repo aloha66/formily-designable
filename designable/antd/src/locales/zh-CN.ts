@@ -107,6 +107,8 @@ const CardLocale = {
     { label: '内置', value: 'inner' },
     { label: '默认', value: '' },
   ],
+  // size: { title: '尺寸', dataSource: ['默认', '小'] },
+  // size: { title: '尺寸', dataSource: ['默认', '小'] },
 }
 
 const CascaderLocale = {
@@ -362,6 +364,7 @@ const FieldLocale = {
     ...ComponentLocale,
     tab_property: '组件属性',
     tab_style: '组件样式',
+    common_property: '通用',
   },
 }
 

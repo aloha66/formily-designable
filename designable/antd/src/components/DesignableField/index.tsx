@@ -30,7 +30,7 @@ Schema.silent()
 export const createDesignableField = (options: IDesignableFieldProps) => {
   const realOptions = createOptions(options)
 
-  // const tabs = {}
+  const tabs = {}
 
   const getFieldPropsSchema = (node: TreeNode): ISchema => {
     const decorator = node.props['x-decorator']
@@ -43,54 +43,17 @@ export const createDesignableField = (options: IDesignableFieldProps) => {
       component &&
       (FormPath.getIn(realOptions.componentsPropsSchema, component) ||
         FormPath.getIn(defaultSchemas, component))
-    // const TabSchema = (key: string, schema: ISchema) => {
-    //   tabs[key] = tabs[key] || FormTab.createFormTab()
-    //   return {
-    //     type: 'object',
-    //     properties: {
-    //       propsTab: {
-    //         type: 'void',
-    //         'x-component': 'FormTab',
-    //         'x-component-props': {
-    //           formTab: tabs[key],
-    //           style: {
-    //             overflow: 'visible',
-    //           },
-    //         },
-    //         properties: {
-    //           propsPane: {
-    //             type: 'void',
-    //             'x-component': 'FormTab.TabPane',
-    //             'x-component-props': {
-    //               tab: GlobalRegistry.getDesignerMessage(
-    //                 `settings.${key}.tab_property`
-    //               ),
-    //             },
-    //             properties: schema.properties,
-    //           },
-    //           stylePane: {
-    //             type: 'void',
-    //             'x-component': 'FormTab.TabPane',
-    //             'x-component-props': {
-    //               tab: GlobalRegistry.getDesignerMessage(
-    //                 `settings.${key}.tab_style`
-    //               ),
-    //             },
-    //             properties: {
-    //               style: defaultSchemas.CSSStyle,
-    //             },
-    //           },
-    //         },
-    //       },
-    //     },
-    //   }
-    // }
-
+    // 改造成水平tab
+    // TODO 引入tab后，通用tab的启用容器选项，启用后不能切换到容器tab（tab内容渲染问题）
+    // 通用配置
     const commonProperties = {
       name: {
         type: 'string',
         'x-decorator': 'FormItem',
         'x-component': 'Input',
+        'x-component-props': {
+          defaultValue: node.id,
+        },
         'x-index': 0,
       },
       title: {
@@ -126,6 +89,7 @@ export const createDesignableField = (options: IDesignableFieldProps) => {
         'x-index': 4,
       },
     }
+
     const base = {
       type: 'object',
       properties: {
@@ -144,7 +108,7 @@ export const createDesignableField = (options: IDesignableFieldProps) => {
               'x-component': 'FormTab.TabPane',
               'x-component-props': {
                 tab: GlobalRegistry.getDesignerMessage(
-                  `settings.x-component-props.tab_property`
+                  `settings.x-component-props.common_property`
                 ),
               },
               properties: commonProperties,
@@ -160,12 +124,47 @@ export const createDesignableField = (options: IDesignableFieldProps) => {
               },
               properties: {
                 'x-component-props': {
+                  // 组件相关的props
                   type: 'object',
                   properties: componentSchema.properties,
                 },
               },
             },
-            stylePane: decoratorSchema && {
+            stylePane: componentSchema && {
+              type: 'void',
+              'x-component': 'FormTab.TabPane',
+              'x-component-props': {
+                tab: GlobalRegistry.getDesignerMessage(
+                  `settings.x-component-props.tab_style`
+                ),
+              },
+              properties: {
+                'x-component-props': {
+                  // 组件相关的props
+                  type: 'object',
+                  properties: {
+                    style: defaultSchemas.CSSStyle,
+                  },
+                },
+              },
+            },
+            propsPane2: decoratorSchema && {
+              type: 'void',
+              'x-component': 'FormTab.TabPane',
+              'x-component-props': {
+                tab: GlobalRegistry.getDesignerMessage(
+                  `settings.x-decorator-props.tab_property`
+                ),
+              },
+              properties: {
+                'x-decorator-props': {
+                  // 容器相关的props
+                  type: 'object',
+                  properties: decoratorSchema.properties,
+                },
+              },
+            },
+            stylePane2: decoratorSchema && {
               type: 'void',
               'x-component': 'FormTab.TabPane',
               'x-component-props': {
@@ -175,6 +174,7 @@ export const createDesignableField = (options: IDesignableFieldProps) => {
               },
               properties: {
                 'x-decorator-props': {
+                  // 容器相关的props
                   type: 'object',
                   properties: {
                     style: defaultSchemas.CSSStyle,
@@ -367,7 +367,6 @@ export const createDesignableField = (options: IDesignableFieldProps) => {
         </VoidField>
       )
     }
-
     return <Field {...fieldProps} name={node.id} />
   })
 

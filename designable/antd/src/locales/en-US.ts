@@ -106,6 +106,7 @@ const CardLocale = {
     { label: 'Built-in', value: 'inner' },
     { label: 'Default', value: '' },
   ],
+  // size: { title: 'Size', dataSource: ['Default', 'Small'] },
 }
 
 const CascaderLocale = {
@@ -369,6 +370,7 @@ const FieldLocale = {
     ...ComponentLocale,
     tab_property: 'Component',
     tab_style: 'Style',
+    common_property: 'Common',
   },
 }
 

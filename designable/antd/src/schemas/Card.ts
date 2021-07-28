@@ -32,5 +32,15 @@ export const Card: ISchema & { Addition?: ISchema } = {
         defaultChecked: true,
       },
     },
+    size: {
+      type: 'string',
+      enum: ['default', 'small', 'middle'],
+      // enum: GlobalRegistry.getDesignerMessage('settings.size'),
+      'x-decorator': 'FormItem',
+      'x-component': 'Select',
+      'x-component-props': {
+        defaultValue: 'default',
+      },
+    },
   },
 }
