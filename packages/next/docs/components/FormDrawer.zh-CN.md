@@ -368,11 +368,16 @@ interface IFormDrawer {
   close(): void
 }
 
+interface IDrawerProps extends DrawerProps {
+  onClose?: (reason: string, e: React.MouseEvent) => void | boolean // return false can prevent onClose
+  loadingText?: React.ReactNode
+}
+
 interface FormDrawer {
-  (title: DrawerProps, id: string, renderer: FormDrawerRenderer): IFormDrawer
-  (title: DrawerProps, id: FormDrawerRenderer, renderer: unknown): IFormDrawer
+  (title: IDrawerProps, id: string, renderer: FormDrawerRenderer): IFormDrawer
+  (title: IDrawerProps, renderer: FormDrawerRenderer): IFormDrawer
   (title: ModalTitle, id: string, renderer: FormDrawerRenderer): IFormDrawer
-  (title: ModalTitle, id: FormDrawerRenderer, renderer: unknown): IFormDrawer
+  (title: ModalTitle, renderer: FormDrawerRenderer): IFormDrawer
 }
 ```
 
